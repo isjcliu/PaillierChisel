@@ -1,0 +1,131 @@
+java.lang.IndexOutOfBoundsException: 0
+occurred in the presentation compiler.
+
+action parameters:
+offset: 1410
+uri: file://<WORKSPACE>/src/main/scala/operator/ModInvert.scala
+text:
+package operator
+
+import chisel3._
+import chisel3.util._
+
+class ModInvertInput(val base_width: Int, val mod_width: Int) extends Bundle{
+    val base = UInt(base_width.W)
+    val mod = UInt(mod_width.W)
+}
+class ModInvertOutput(val res_width: Int) extends Bundle{
+    val res = UInt(res_width.W)
+}
+
+class ModInvert(base_width: UInt, mod_width: UInt) extends Module{
+    val din = Flipped(Decoupled(new ModInvertInput(base_width, mod_width)))
+    val dout = Decoupled(new ModInvertOutput(mod_width))
+
+    val base = RegInit(0.U(base_width.W))
+    val mod = RegInit(0.U(mod_width.W))
+    val u = RegInit(0.U(mod_width.W))
+    val v = RegInit(0.U(mod_width.W))
+    val flag = RegInit(false.B)
+
+    val idle :: init :: s1 :: s2 :: s3 :: end :: Nil = Enum(4)
+    val s1 :: s2 :: s3 :: Nil = Enum(3)
+    val status = RegInit(idle)
+    val small_status = RegInit(s1)
+    
+    switch(status){
+        is(idle){
+            when(din.ready && din.valid){
+                status := init
+            }.otherwise{
+                status := idle
+            }
+        }
+        is(init){
+            base := din.bits.base
+            mod := din.bits.mod
+            u := 1.U
+            v := 0.U
+            status := s1
+        }
+        is(s1){
+            when(base =/= 0){
+                when(base(0) === 0 && u(0) === 0){
+                    status := s2
+                },@@
+                status := s2
+            }.otherwise{
+                status := end
+            }
+        }
+        is(s2){
+            when(base(0) === 0 && u(0) === 0){
+                base := base >> 1
+                u := u >> 1
+                status := s3
+            }.elsewhen(base(0) === 0 && u(0) =/= 0){
+                base := base >> 1
+                u := (u + mod) >> 1
+                status := s3
+            }.otherwise{
+                status := s3
+            }
+        }
+        is(s3){
+            when(mod(0) === 0 && v(0) === 0){
+                mod := mod >> 1
+                v := v >> 1
+                status := s4
+            }.elsewhen(mod(0) === 0 && v(0) =/= 0){
+                mod := mod >> 1
+                v := (v + mod) >> 1
+                status := s4
+            }.otherwise{
+                status := s4
+            }
+        }
+        is(s4){
+            when(base > mod){
+                status := s5
+            }.otherwise{
+                status := s6
+            }
+        }
+        is(s5){
+            base := base - mod
+            when(u > v){
+                u := u -v
+                status := end
+            }.otherwise{
+                u := u + mod - v
+                status := end
+            }
+        }
+        is(s6){
+            mod := mod - base
+            when(v > u){
+                v := v - u
+                status := end
+            }.otherwise{
+                v := v + mod -u
+                status := end
+            }
+        }
+        is(end){
+            
+        }
+    }
+}
+
+
+error stacktrace:
+scala.collection.LinearSeqOps.apply(LinearSeq.scala:131)
+	scala.collection.LinearSeqOps.apply$(LinearSeq.scala:128)
+	scala.collection.immutable.List.apply(List.scala:79)
+	dotty.tools.dotc.util.Signatures$.countParams(Signatures.scala:501)
+	dotty.tools.dotc.util.Signatures$.applyCallInfo(Signatures.scala:186)
+	dotty.tools.dotc.util.Signatures$.computeSignatureHelp(Signatures.scala:94)
+	dotty.tools.dotc.util.Signatures$.signatureHelp(Signatures.scala:63)
+	scala.meta.internal.pc.MetalsSignatures$.signatures(MetalsSignatures.scala:17)
+	scala.meta.internal.pc.SignatureHelpProvider$.signatureHelp(SignatureHelpProvider.scala:51)
+	scala.meta.internal.pc.ScalaPresentationCompiler.signatureHelp$$anonfun$1(ScalaPresentationCompiler.scala:371)

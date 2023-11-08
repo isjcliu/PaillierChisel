@@ -1,0 +1,107 @@
+java.lang.IndexOutOfBoundsException: 0
+occurred in the presentation compiler.
+
+action parameters:
+offset: 1444
+uri: file://<WORKSPACE>/src/main/scala/operator/ModInvert.scala
+text:
+package operator
+
+import chisel3._
+import chisel3.util._
+
+class ModInvertInput(val base_width: Int, val mod_width: Int) extends Bundle{
+    val base = UInt(base_width.W)
+    val mod = UInt(mod_width.W)
+}
+class ModInvertOutput(val mod_width: Int) extends Bundle{
+    val res = UInt(mod_width.W)
+}
+
+class ModInvert() extends Module{
+    val din = Flipped(Decoupled(new ModInvertInput(base_width, mod_width)))
+    val dout = Decoupled(new ModInvertOutput(mod_width))
+
+    val base = RegInit(0.U(1.W))
+    val mod = RegInit(0.U(1.W))
+    val u = RegInit(0.U(1.W))
+    val v = RegInit(0.U(1.W))
+    val flag = RegInit(false.B)
+
+    val idle :: init :: start :: end :: Nil = Enum(4)
+    val s1 :: s2 :: s3 :: Nil = Enum(3)
+    val status = RegInit(idle)
+    val small_status = RegInit(s1)
+    
+    switch(status){
+        is(idle){
+            when(){
+                status := init
+            }.otherwise{
+                status := idle
+            }
+        }
+        is(init){
+            base := din.bits.base
+            mod := din.bits.mod
+            u := 1.U
+            v := 0.U
+            status := start
+        }
+        is(start){
+            when(base =/= 0){
+                when(!base(0)){
+                    base >> 1
+                    u := Mux((u >> 1) > m, (u >> 1) - m, u >> 1) 
+                    status := end
+                }.elsewhen(base < mod){
+                    s,@@
+                    switch(small_status){
+                        is(s1){
+                            base := mod
+                            mod := base
+                            u := v
+                            v := u
+                            small_status := s2
+                        }
+                        is(s2){
+                            base := (base - mod) >> 1
+                            u := Mux(((u - v) >> 1) > m, ((u - v) >> 1) - m, (u - v) >> 1)
+                            status := start
+                            small_status := s3
+                        }
+                        is(s3){
+                            small_status := s3
+                        }
+                    }
+                }.otherwise{
+                    status := start
+                }
+            }.otherwise{
+                status := end
+            }
+        }
+        is(end){
+            when(mod === 1){
+                res := v
+                dout.valid := true.B
+            }.otherwise{
+                res := 0
+                dout.valid := false.B
+            }
+        }
+    }
+}
+
+
+error stacktrace:
+scala.collection.LinearSeqOps.apply(LinearSeq.scala:131)
+	scala.collection.LinearSeqOps.apply$(LinearSeq.scala:128)
+	scala.collection.immutable.List.apply(List.scala:79)
+	dotty.tools.dotc.util.Signatures$.countParams(Signatures.scala:501)
+	dotty.tools.dotc.util.Signatures$.applyCallInfo(Signatures.scala:186)
+	dotty.tools.dotc.util.Signatures$.computeSignatureHelp(Signatures.scala:94)
+	dotty.tools.dotc.util.Signatures$.signatureHelp(Signatures.scala:63)
+	scala.meta.internal.pc.MetalsSignatures$.signatures(MetalsSignatures.scala:17)
+	scala.meta.internal.pc.SignatureHelpProvider$.signatureHelp(SignatureHelpProvider.scala:51)
+	scala.meta.internal.pc.ScalaPresentationCompiler.signatureHelp$$anonfun$1(ScalaPresentationCompiler.scala:371)

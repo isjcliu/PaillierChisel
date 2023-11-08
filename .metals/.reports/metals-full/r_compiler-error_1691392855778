@@ -1,0 +1,101 @@
+java.lang.IndexOutOfBoundsException: 0
+occurred in the presentation compiler.
+
+action parameters:
+offset: 1557
+uri: file://<WORKSPACE>/src/main/scala/operator/Powmod.scala
+text:
+package operator
+import chisel3._
+import chisel3.util._
+
+class PowmodInput(val base_width: Int, val exp_width: Int, val mod_width: Int) extends Bundle{
+    val base = UInt(base_width.W)
+    val exp = UInt(exp_width.W)
+    val mod = UInt(mod_width.W)
+}
+class PowmodOutput(val mod_width: UInt) extends Bundle{
+    val res = UInt(mod_width.W)
+}
+
+class Powmod(base_width: Int, exp_width: Int, mod_width: Int) extends Module{
+    val din = IO(Flipped(Decoupled(new PowmodInput(base_width, exp_width, mod_width))))
+    val dout = IO(Decoupled(PowmodOutput))
+    
+    val base = RegInit(0.U(base_width.W))
+    val exp = RegInit(0.U(exp_width.W))
+    val mod = RegInit(0.U(mod_width.W))
+    val temp = RegInit(0.U(mod_width.W))
+    val res = RegInit(0.U(mod_width.W))
+    
+    val count = RegInit(0.U((log2Ceil(exp_width) + 1).W))
+    object PowmodSel extends ChiselEnum{
+        val IDLE, INIT, S1, S2, END = Value
+    }
+    import PowmodSel._
+    val status = RegInit(IDLE)
+    
+    din.ready := true.B
+    dout.valid := false.B
+    dout.bits.res := DontCare
+    
+    val modMul = new ModMul(mod_width)
+    switch(status){
+        is(IDLE){
+            when(){
+                status := INIT
+            }.otherwise{
+                status := IDLE
+            }
+        }
+        is(INIT){
+            base := din.bits.base
+            exp := din.bits.exp
+            mod := din.bits.mod
+            temp := 1.U
+            count := 0.U
+            status := S1
+        }
+        is(S1){
+            modMul.din,@@
+            //temp = temp * temp mod m
+            status := S2
+        }
+        is(S2){
+            when(mod(count)){
+            
+            //temp = temp * x mod m
+                status := END
+            }.otherwise{
+                status := END
+            }
+        }
+        is(END){
+            when(count === 0.U){
+                res := temp
+                dout.valid := true.B
+                status := IDLE
+            }.otherwise{
+                count := count - 1.U
+                stauts := S1
+            }
+        }
+    }
+    when(){
+        dout.bits.res := res
+    }
+}
+
+
+
+error stacktrace:
+scala.collection.LinearSeqOps.apply(LinearSeq.scala:131)
+	scala.collection.LinearSeqOps.apply$(LinearSeq.scala:128)
+	scala.collection.immutable.List.apply(List.scala:79)
+	dotty.tools.dotc.util.Signatures$.countParams(Signatures.scala:501)
+	dotty.tools.dotc.util.Signatures$.applyCallInfo(Signatures.scala:186)
+	dotty.tools.dotc.util.Signatures$.computeSignatureHelp(Signatures.scala:94)
+	dotty.tools.dotc.util.Signatures$.signatureHelp(Signatures.scala:63)
+	scala.meta.internal.pc.MetalsSignatures$.signatures(MetalsSignatures.scala:17)
+	scala.meta.internal.pc.SignatureHelpProvider$.signatureHelp(SignatureHelpProvider.scala:51)
+	scala.meta.internal.pc.ScalaPresentationCompiler.signatureHelp$$anonfun$1(ScalaPresentationCompiler.scala:371)

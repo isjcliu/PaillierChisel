@@ -1,0 +1,46 @@
+java.lang.IndexOutOfBoundsException: 0
+occurred in the presentation compiler.
+
+action parameters:
+offset: 334
+uri: file://<WORKSPACE>/src/test/scala/ModMulTB.scala
+text:
+package test
+
+import operator._
+import chisel3._
+import chiseltest._
+import org.scalatest.freespec.AnyFreeSpec
+
+class ModMulTB extends AnyFreeSpec with ChiselScalatestTester{
+    "DUT should calculate" in{
+        test(new ModMul(2048)).withAnnotations(Seq(WriteVcdAnnotation)){dut =>
+
+        dut.din.bits.in1.poke(BigInt(@@))
+        dut.clock.step(1)
+        dut.din.bits.in2.poke(202.U)
+        dut.clock.step(1)
+        dut.din.bits.in3.poke(239.U)
+        dut.clock.step(1)
+        dut.din.valid.poke(true.B)
+        dut.dout.ready.poke(true.B)
+        dut.clock.setTimeout(0)
+        dut.clock.step(64)
+
+        }
+    }
+}
+
+
+
+error stacktrace:
+scala.collection.LinearSeqOps.apply(LinearSeq.scala:131)
+	scala.collection.LinearSeqOps.apply$(LinearSeq.scala:128)
+	scala.collection.immutable.List.apply(List.scala:79)
+	dotty.tools.dotc.util.Signatures$.countParams(Signatures.scala:501)
+	dotty.tools.dotc.util.Signatures$.applyCallInfo(Signatures.scala:186)
+	dotty.tools.dotc.util.Signatures$.computeSignatureHelp(Signatures.scala:94)
+	dotty.tools.dotc.util.Signatures$.signatureHelp(Signatures.scala:63)
+	scala.meta.internal.pc.MetalsSignatures$.signatures(MetalsSignatures.scala:17)
+	scala.meta.internal.pc.SignatureHelpProvider$.signatureHelp(SignatureHelpProvider.scala:51)
+	scala.meta.internal.pc.ScalaPresentationCompiler.signatureHelp$$anonfun$1(ScalaPresentationCompiler.scala:371)

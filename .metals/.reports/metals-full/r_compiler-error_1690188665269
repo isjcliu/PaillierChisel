@@ -1,0 +1,46 @@
+java.lang.IndexOutOfBoundsException: 0
+occurred in the presentation compiler.
+
+action parameters:
+offset: 849
+uri: file://<WORKSPACE>/src/test/scala/ModMulTB.scala
+text:
+package test
+
+import operator._
+import chisel3._
+import chiseltest._
+import org.scalatest.freespec.AnyFreeSpec
+
+class ModMulTB extends AnyFreeSpec with ChiselScalatestTester{
+    "DUT should calculate" in{
+        test(new ModMul(2048)).withAnnotations(Seq(WriteVcdAnnotation)){dut =>
+
+        dut.din.bits.in1.poke(BigInt("7A867B2288654AD721715B9525B25B70BA0C0C65A1B594E548396F9526F40FA0BBC2CDF0CADBA8DAC12AD2046D5BBCF95BC565FF93B4F6557D18AEA9F7759E7321416526933632EDFE72909B587F665B5506590C61B329E4AA3C7C56C082A07A57B15B816D618A40F5151E07F60F7E0FB25CE68A1258841AF15996B7799E4E44B2693ADC264A80DCD6B74660B7E98180F2DB0F2221D73180D49E226531FF0019584C77BB535F89223164DEBA8B68D6EB6A87B2EA267DEDE5F6BEAF70450D7DD8C611CB8D4302500B578573CB3A896196370B1284C029564432F24E1F32E97080158159DDC4CAC4014C823329848ADD6E6E606FFBD5A0C5BA4574439926814A6", @@))
+        dut.clock.step(1)
+        dut.din.bits.in2.poke(202.U)
+        dut.clock.step(1)
+        dut.din.bits.in3.poke(239.U)
+        dut.clock.step(1)
+        dut.din.valid.poke(true.B)
+        dut.dout.ready.poke(true.B)
+        dut.clock.setTimeout(0)
+        dut.clock.step(64)
+
+        }
+    }
+}
+
+
+
+error stacktrace:
+scala.collection.LinearSeqOps.apply(LinearSeq.scala:131)
+	scala.collection.LinearSeqOps.apply$(LinearSeq.scala:128)
+	scala.collection.immutable.List.apply(List.scala:79)
+	dotty.tools.dotc.util.Signatures$.countParams(Signatures.scala:501)
+	dotty.tools.dotc.util.Signatures$.applyCallInfo(Signatures.scala:186)
+	dotty.tools.dotc.util.Signatures$.computeSignatureHelp(Signatures.scala:94)
+	dotty.tools.dotc.util.Signatures$.signatureHelp(Signatures.scala:63)
+	scala.meta.internal.pc.MetalsSignatures$.signatures(MetalsSignatures.scala:17)
+	scala.meta.internal.pc.SignatureHelpProvider$.signatureHelp(SignatureHelpProvider.scala:51)
+	scala.meta.internal.pc.ScalaPresentationCompiler.signatureHelp$$anonfun$1(ScalaPresentationCompiler.scala:371)

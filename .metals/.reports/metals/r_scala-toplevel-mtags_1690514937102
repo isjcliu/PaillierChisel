@@ -1,0 +1,7 @@
+id: file://<WORKSPACE>/src/main/scala/maker.scala:[46..46) in Input.VirtualFile("file://<WORKSPACE>/src/main/scala/maker.scala", "import chisel3._
+import  chisel3.stage._
+
+def ")
+file://<WORKSPACE>/src/main/scala/maker.scala:4: error: expected identifier; obtained eof
+def 
+    ^

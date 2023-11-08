@@ -1,0 +1,95 @@
+java.lang.IndexOutOfBoundsException: 0
+occurred in the presentation compiler.
+
+action parameters:
+offset: 1799
+uri: file://<WORKSPACE>/src/main/scala/operator/ModMul.scala
+text:
+package operator
+import chisel3._
+import chisel3.util._
+
+class ModMulInput(width: Int) extends Bundle{
+    val mult = UInt(width.W)
+    val multcand = UInt(width.W)
+    val mod = UInt(width.W)
+}
+
+class ModMulOutput(width: Int) extends Bundle{
+    val res = UInt(width.W)
+}
+
+class ModMul(val width: Int) extends Module{
+    val din = IO(Flipped(Decoupled(new ModMulInput(width))))
+    val dout = IO(Decoupled(new ModMulOutput(width)))
+
+    val p = RegInit(0.U((width + 2).W))
+    val a = RegInit(0.U((width + 2).W))
+    val x = RegInit(0.U(width.W))
+    val y = RegInit(0.U(width.W))
+    val m = RegInit(0.U(width.W))
+    val res = RegInit(0.U(width.W))
+
+    val count = RegInit(0.U(log2Ceil(width + 1).W))
+    val countMax = RegInit((width).U(log2Ceil(width + 1).W))
+    
+    val idle :: init :: step1 :: step2 :: end :: Nil = Enum(5)
+    val status = RegInit(idle)
+
+    din.ready := true.B
+    dout.valid := false.B
+    dout.bits.res := DontCare
+
+    
+    switch(status){
+        is(idle){
+            when(din.ready && din.valid){ 
+                status := init
+            }.otherwise{
+                status := idle
+            }
+        }
+        is(init){
+            x := din.bits.mult
+            y := din.bits.multcand
+            m := din.bits.mod
+            p := 0.U
+            count := 0.U
+            status := step1
+        }
+        is(step1){
+            a := p + Mux(x(count), y, 0.U)
+            status := step2
+        }
+        is(step2){
+            p := Mux(a(0), (a + m) >> 1.U, a >> 1.U)
+            count := count + 1.U
+            status := end
+        }
+        is(end){
+            when(count === countMax){
+                res := Mux(p > m, p - m, p)
+                status := idle
+                din,@@
+            }.otherwise{
+                status := step1
+            }  
+        }
+    }
+    when(dout.ready && dout.valid){
+        dout.bits.res := res
+    }
+}
+
+
+error stacktrace:
+scala.collection.LinearSeqOps.apply(LinearSeq.scala:131)
+	scala.collection.LinearSeqOps.apply$(LinearSeq.scala:128)
+	scala.collection.immutable.List.apply(List.scala:79)
+	dotty.tools.dotc.util.Signatures$.countParams(Signatures.scala:501)
+	dotty.tools.dotc.util.Signatures$.applyCallInfo(Signatures.scala:186)
+	dotty.tools.dotc.util.Signatures$.computeSignatureHelp(Signatures.scala:94)
+	dotty.tools.dotc.util.Signatures$.signatureHelp(Signatures.scala:63)
+	scala.meta.internal.pc.MetalsSignatures$.signatures(MetalsSignatures.scala:17)
+	scala.meta.internal.pc.SignatureHelpProvider$.signatureHelp(SignatureHelpProvider.scala:51)
+	scala.meta.internal.pc.ScalaPresentationCompiler.signatureHelp$$anonfun$1(ScalaPresentationCompiler.scala:371)
