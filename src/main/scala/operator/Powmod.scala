@@ -20,11 +20,12 @@ class Powmod(val exp_width: Int, val mod_width: Int) extends Module{
     val x     = RegInit(0.U(mod_width.W))
     val e     = RegInit(0.U(mod_width.W))
     val ty    = RegInit(0.U(mod_width.W))
+    val mod   = RegInit(0.U(mod_width.W))
     val exp2k = RegInit(0.U(mod_width.W))
     val res   = RegInit(0.U(mod_width.W))
     
-    val count    = RegInit(0.U((log2Ceil(mod_width) + 1).W))
-    val countMax = RegInit(mod_width.U((log2Ceil(mod_width) + 1).W))
+    val i = RegInit(0.U((log2Ceil(mod_width) + 1).W))
+    val k = RegInit(mod_width.U((log2Ceil(mod_width) + 1).W))
     
     val idle :: init :: conv :: s1 :: g1 :: s2 :: g2 :: s3 :: g3 :: end :: Nil = Enum(9)
     
@@ -32,40 +33,47 @@ class Powmod(val exp_width: Int, val mod_width: Int) extends Module{
     dout.valid    := false.B
     dout.bits.res := DontCare
     
-    val modMul = Module(new ModMul(mod_width))
-    modMul.din.bits.mult     := 0.U
-    modMul.din.bits.multcand := 0.U
-    modMul.din.bits.mod      := din.bits.mod
-    modMul.din.valid         := false.B
-    modMul.dout.ready        := false.B
+    val mp = Module(new ModMul(mod_width))
+    mp.din.bits.mult     := 0.U
+    mp.din.bits.multcand := 0.U
+    mp.din.bits.mod      := din.bits.mod
+    mp.din.valid         := false.B
+    mp.dout.ready        := false.B
     
     switch(status){
         is(idle){
             when(din.ready && din.valid){
                 status           := init
-                modMul.din.ready := true.B
+                mp.din.ready := true.B
             }.otherwise{
                 status := idle
             }
         }
         is(init){
-            x                        := din.bits.exp
-            e                        := din.bits.expk
-            modMul.din.bits.mult     := din.bits.base
-            modMul.din.bits.multcand := din.bits.exp2k
-            modMul.din.bits.mod      := din.bits.mod
+            x                    := din.bits.exp
+            e                    := din.bits.expk
+            mp.din.bits.mult     := din.bits.base
+            mp.din.bits.multcand := din.bits.exp2k
+            mp.din.bits.mod      := din.bits.mod
 
-            when(modMul.dout.valid === true.B){
-                ty     := modmul.dout.bits.res
+            when(mp.dout.valid === true.B){
+                ty     := mp.dout.bits.res
                 status := s1
             }.otherwise{
                 status := init
             }
         }
-        is(S1){
-            ty := modMul.dout.bits.res
-            dout.bits.res := ty
+        is(s1){
+            when(x[i] === 1.U){
+                mp.din.bits.mult     := e
+                mp.din.bits.multcand := ty
+                mp.din.bits.mod      := mod
+                when(mp.dout.valid === true.B){
+                    e := mp
+                }
+            }
         }
+        is(s2)
     }
     // switch(status){
     //     is(IDLE){//0
