@@ -15,95 +15,123 @@ class PowmodOutput(mod_width: Int) extends Bundle{
 // res = y^x mod m
 class Powmod(val exp_width: Int, val mod_width: Int) extends Module{
     val din  = IO(Flipped(Decoupled(new PowmodInput(exp_width, mod_width))))
-    val dout = IO(Decoupled(new PowmodOutput(mod_width)))
+    val dout = IO(ValidIO(new PowmodOutput(mod_width)))
     
-    val y     = RegInit(0.U(mod_width.W))
-    val x     = RegInit(0.U(mod_width.W))
-    val m     = RegInit(0.U(mod_width.W))
-    val e     = RegInit(0.U(mod_width.W))
-    val ty    = RegInit(0.U(mod_width.W))
-    val exp2k = RegInit(0.U(mod_width.W))
-    val res   = RegInit(0.U(mod_width.W))
-    
-    val i = RegInit(0.U((log2Ceil(mod_width) + 1).W))
-    val k = RegInit(mod_width.U((log2Ceil(mod_width) + 1).W))
-    
-    val idle :: init :: s1 :: s2 :: s3 :: s4 :: s5 :: s6 :: end :: Nil = Enum(9)
-    val status = RegInit(idle)
+    val x            = RegInit(0.U(mod_width.W))
+    val e            = RegInit(0.U(mod_width.W))
+    val ty           = RegInit(0.U(mod_width.W))
+    val res          = RegInit(0.U(mod_width.W))
 
-    din.ready     := false.B
-    dout.valid    := false.B
-    dout.bits.res := DontCare
+    val mp_mult           = RegInit(0.U(mod_width.W))
+    val mp_multcand       = RegInit(0.U(mod_width.W))
+    val mp_mod            = RegInit(0.U(mod_width.W))
+    val mp_din_valid_reg  = RegInit(false.B)
+
+    val zero_reg          = RegInit(0.U(1.W))
+    val one_reg           = RegInit(1.U(1.W))
+    val din_ready_reg     = RegInit(true.B)
+    val dout_valid_reg    = RegInit(false.B)
+    
+
+    val count = RegInit(0.U((log2Ceil(mod_width) + 1).W))
+    val count_max = RegInit((mod_width).U((log2Ceil(mod_width) + 1).W))
+    
+    val s0 :: s1 :: s2 :: s3 :: s4 :: s5 :: s6 :: s7 :: s8 :: s9:: Nil = Enum(10)
+    val status  = RegInit(s0)
+
+    din.ready     := din_ready_reg
+    dout.valid    := dout_valid_reg
+    dout.bits.res := res
     
     val mp = Module(new ModMul(mod_width))
-    mp.din.bits.mult     := 0.U
-    mp.din.bits.multcand := 0.U
-    mp.din.bits.mod      := 0.U
-    mp.din.valid         := false.B
-    mp.dout.ready        := false.B
+    mp.din.valid         := mp_din_valid_reg
+    mp.din.bits.mult     := mp_mult
+    mp.din.bits.multcand := mp_multcand
+    mp.din.bits.mod      := mp_mod
 
     switch(status){
-        is(init){
-            x                    := din.bits.exp
-            e                    := din.bits.expk
-            mp.din.bits.mult     := din.bits.base
-            mp.din.bits.multcand := din.bits.exp2k
-            mp.din.bits.mod      := din.bits.mod
-            mp.din.valid         := true.B
-            status               := s1
+        is(s0){
+            when(din.ready && din.valid){
+                status := s1
+            }.otherwise{
+                status := s0
+            }
         }
         is(s1){
-            when(mp.dout.ready === true.B){
-                ty     := mp.dout.bits.res
-                status := s2
-            }.otherwise{
-                status := init
-            }
-
+            mp_din_valid_reg := true.B
+            x                := din.bits.exp
+            e                := din.bits.expk
+            mp_mult          := din.bits.base
+            mp_multcand      := din.bits.exp2k
+            mp_mod           := din.bits.mod
+            count            := zero_reg
+            status           := s2
         }
         is(s2){
-            when(x(i) === 1.U){
-                mp.din.bits.mult     := e
-                mp.din.bits.multcand := ty
-                mp.din.valid         := true.B
-                status               := s3
+            when(mp.dout.valid === true.B){
+                ty     := mp.dout.bits.res
+                status := s3
             }.otherwise{
-                status := s4
+                mp_din_valid_reg := false.B
+                status           := s2
             }
         }
         is(s3){
-            when(mp.dout.ready === true.B){
-                e      := mp.dout.bits.res
-                status := s4
+            when(count === count_max){
+                status := s8
             }.otherwise{
-                status := s2
-            }
-        }
-        is(s4){
-            mp.din.bits.mult     := ty
-            mp.din.bits.multcand := ty
-            mp.din.valid         := true.B
-        }
-        is(s5){
-            when(mp.dout.ready === true.B){
-                ty := mp.dout.bits.res
-                when(i =/= k){
-                    i >> 1.U
-                    status := s2
+                when(x(count) === 1.U){
+                    status := s4
                 }.otherwise{
                     status := s6
                 }
             }
         }
-        is(s6){
-            mp.din.bits.mult     := 1.U
-            mp.din.bits.multcand := e
-            mp.din.valid         := true.B
-            status               := end 
+        is(s4){
+            mp_din_valid_reg := true.B
+            mp_mult          := e
+            mp_multcand      := ty
+            status           := s5
         }
-        is(end){
+        is(s5){
             when(mp.dout.valid === true.B){
-                res := mp.dout.bits.res
+                e      := mp.dout.bits.res
+                status := s6
+            }.otherwise{
+                mp_din_valid_reg := false.B
+                status           := s5
+            }
+        }
+        is(s6){
+            mp_mult              := ty
+            mp_multcand          := ty
+            mp_din_valid_reg     := true.B
+            status               := s7
+        }
+        is(s7){
+            when(mp.dout.valid === true.B){
+                ty     := mp.dout.bits.res
+                count  := count + 1.U
+                status := s3
+            }.otherwise{
+                mp_din_valid_reg := false.B
+                status           := s7
+            }
+        }
+        is(s8){
+            mp_mult          := e
+            mp_multcand      := one_reg
+            mp_din_valid_reg := true.B
+            status           := s9
+        }
+        is(s9){
+            when(mp.dout.valid === true.B){
+                res            := mp.dout.bits.res
+                dout_valid_reg := true.B
+                status         := s0
+            }.otherwise{
+                mp_din_valid_reg := false.B
+                status           := s9
             }
         }
     }

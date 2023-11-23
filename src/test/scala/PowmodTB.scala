@@ -15,8 +15,7 @@ class PowmodTB extends AnyFreeSpec with ChiselScalatestTester{
         dut.din.bits.exp2k.poke(50.U)
         dut.din.bits.mod.poke(239.U)
         dut.din.valid.poke(true.B)
-        dut.dout.ready.poke(true.B)
-        dut.clock.step(1024)
+        dut.clock.step(10240)
         }
     }
 }
