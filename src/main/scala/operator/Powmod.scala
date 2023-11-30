@@ -2,9 +2,9 @@ package operator
 import chisel3._
 import chisel3.util._
 
-class PowmodInput(exp_width: Int, mod_width: Int) extends Bundle{
-    val base  = UInt(mod_width.W)
-    val exp   = UInt(mod_width.W)
+class PowmodInput(base_width: Int, exp_width: Int, mod_width: Int) extends Bundle{
+    val base  = UInt(base_width.W)
+    val exp   = UInt(exp_width.W)
     val mod   = UInt(mod_width.W)
     val expk  = UInt(mod_width.W)
     val exp2k = UInt(mod_width.W)
@@ -13,11 +13,11 @@ class PowmodOutput(mod_width: Int) extends Bundle{
     val res = UInt(mod_width.W)
 }
 // res = y^x mod m
-class Powmod(val exp_width: Int, val mod_width: Int) extends Module{
-    val din  = IO(Flipped(Decoupled(new PowmodInput(exp_width, mod_width))))
+class Powmod(val base_width: Int, val exp_width: Int, val mod_width: Int) extends Module{
+    val din  = IO(Flipped(Decoupled(new PowmodInput(base_width, exp_width, mod_width))))
     val dout = IO(ValidIO(new PowmodOutput(mod_width)))
     
-    val x            = RegInit(0.U(mod_width.W))
+    val x            = RegInit(0.U(exp_width.W))
     val e            = RegInit(0.U(mod_width.W))
     val ty           = RegInit(0.U(mod_width.W))
     val res          = RegInit(0.U(mod_width.W))
@@ -43,7 +43,7 @@ class Powmod(val exp_width: Int, val mod_width: Int) extends Module{
     dout.valid    := dout_valid_reg
     dout.bits.res := res
     
-    val mp = Module(new ModMul(mod_width))
+    val mp = Module(new ModMul(mod_width, mod_width, mod_width))
     mp.din.valid         := mp_din_valid_reg
     mp.din.bits.mult     := mp_mult
     mp.din.bits.multcand := mp_multcand
