@@ -1,4 +1,4 @@
-module ModMul(
+module ModMul_11_11(
   input           clock,
   input           reset,
   output          din_ready, // @[src/main/scala/operator/ModMul.scala 20:18]

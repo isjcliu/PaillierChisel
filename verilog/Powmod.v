@@ -201,7 +201,7 @@ module Powmod(
   output          din_ready, // @[src/main/scala/operator/Powmod.scala 20:18]
   input           din_valid, // @[src/main/scala/operator/Powmod.scala 20:18]
   input  [1023:0] din_bits_base, // @[src/main/scala/operator/Powmod.scala 20:18]
-  input  [1023:0] din_bits_exp, // @[src/main/scala/operator/Powmod.scala 20:18]
+  input  [255:0]  din_bits_exp, // @[src/main/scala/operator/Powmod.scala 20:18]
   input  [2047:0] din_bits_mod, // @[src/main/scala/operator/Powmod.scala 20:18]
   input  [2047:0] din_bits_expkm, // @[src/main/scala/operator/Powmod.scala 20:18]
   input  [2047:0] din_bits_exp2km, // @[src/main/scala/operator/Powmod.scala 20:18]
@@ -209,7 +209,7 @@ module Powmod(
   output [2047:0] dout_bits_res // @[src/main/scala/operator/Powmod.scala 21:18]
 );
 `ifdef RANDOMIZE_REG_INIT
-  reg [1023:0] _RAND_0;
+  reg [255:0] _RAND_0;
   reg [2047:0] _RAND_1;
   reg [2047:0] _RAND_2;
   reg [2047:0] _RAND_3;
@@ -230,7 +230,7 @@ module Powmod(
   wire [2047:0] mp_din_bits_mod; // @[src/main/scala/operator/Powmod.scala 53:20]
   wire  mp_dout_valid; // @[src/main/scala/operator/Powmod.scala 53:20]
   wire [2047:0] mp_dout_bits_res; // @[src/main/scala/operator/Powmod.scala 53:20]
-  reg [1023:0] x; // @[src/main/scala/operator/Powmod.scala 23:31]
+  reg [255:0] x; // @[src/main/scala/operator/Powmod.scala 23:31]
   reg [2047:0] e; // @[src/main/scala/operator/Powmod.scala 24:31]
   reg [2047:0] ty; // @[src/main/scala/operator/Powmod.scala 25:31]
   reg [2047:0] res; // @[src/main/scala/operator/Powmod.scala 26:31]
@@ -247,7 +247,7 @@ module Powmod(
   wire [1:0] _GEN_2 = _T_10 ? 2'h3 : 2'h2; // @[src/main/scala/operator/Powmod.scala 86:13 88:24 92:34]
   wire  _GEN_3 = _T_10 & mp_din_valid_reg; // @[src/main/scala/operator/Powmod.scala 86:13 31:36 91:34]
   wire  _T_14 = count == 12'h800; // @[src/main/scala/operator/Powmod.scala 97:24]
-  wire [1023:0] _T_15 = x >> count; // @[src/main/scala/operator/Powmod.scala 102:23]
+  wire [255:0] _T_15 = x >> count; // @[src/main/scala/operator/Powmod.scala 102:23]
   wire [2:0] _GEN_4 = _T_15[0] ? 3'h4 : 3'h6; // @[src/main/scala/operator/Powmod.scala 103:17 104:28 107:28]
   wire [3:0] _GEN_5 = _T_14 ? 4'h8 : {{1'd0}, _GEN_4}; // @[src/main/scala/operator/Powmod.scala 98:13 99:24]
   wire [2047:0] _GEN_6 = _T_10 ? mp_dout_bits_res : e; // @[src/main/scala/operator/Powmod.scala 121:13 122:24 24:31]
@@ -335,7 +335,7 @@ module Powmod(
   assign mp_din_bits_mod = mp_mod; // @[src/main/scala/operator/Powmod.scala 57:26]
   always @(posedge clock) begin
     if (reset) begin // @[src/main/scala/operator/Powmod.scala 23:31]
-      x <= 1024'h0; // @[src/main/scala/operator/Powmod.scala 23:31]
+      x <= 256'h0; // @[src/main/scala/operator/Powmod.scala 23:31]
     end else if (!(4'h0 == status)) begin // @[src/main/scala/operator/Powmod.scala 60:5]
       if (4'h1 == status) begin // @[src/main/scala/operator/Powmod.scala 60:5]
         x <= din_bits_exp; // @[src/main/scala/operator/Powmod.scala 75:30]
@@ -466,8 +466,8 @@ initial begin
       `endif
     `endif
 `ifdef RANDOMIZE_REG_INIT
-  _RAND_0 = {32{`RANDOM}};
-  x = _RAND_0[1023:0];
+  _RAND_0 = {8{`RANDOM}};
+  x = _RAND_0[255:0];
   _RAND_1 = {64{`RANDOM}};
   e = _RAND_1[2047:0];
   _RAND_2 = {64{`RANDOM}};

@@ -109,11 +109,11 @@ circuit Powmod :
   module Powmod :
     input clock : Clock
     input reset : UInt<1>
-    input din : { flip ready : UInt<1>, valid : UInt<1>, bits : { base : UInt<1024>, exp : UInt<1024>, mod : UInt<2048>, expkm : UInt<2048>, exp2km : UInt<2048>}} @[src/main/scala/operator/Powmod.scala 20:18]
+    input din : { flip ready : UInt<1>, valid : UInt<1>, bits : { base : UInt<1024>, exp : UInt<256>, mod : UInt<2048>, expkm : UInt<2048>, exp2km : UInt<2048>}} @[src/main/scala/operator/Powmod.scala 20:18]
     output dout : { valid : UInt<1>, bits : { res : UInt<2048>}} @[src/main/scala/operator/Powmod.scala 21:18]
 
-    reg x : UInt<1024>, clock with :
-      reset => (reset, UInt<1024>("h0")) @[src/main/scala/operator/Powmod.scala 23:31]
+    reg x : UInt<256>, clock with :
+      reset => (reset, UInt<256>("h0")) @[src/main/scala/operator/Powmod.scala 23:31]
     reg e : UInt<2048>, clock with :
       reset => (reset, UInt<2048>("h0")) @[src/main/scala/operator/Powmod.scala 24:31]
     reg ty : UInt<2048>, clock with :
