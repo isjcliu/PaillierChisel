@@ -1,3 +1,27 @@
 [
-  
+  {
+    "class":"firrtl.EmitCircuitAnnotation",
+    "emitter":"firrtl.VerilogEmitter"
+  },
+  {
+    "class":"chisel3.experimental.EnumAnnotations$EnumDefAnnotation",
+    "typeName":"operator.ModMul$ModMulSel",
+    "definition":{
+      "S1":1,
+      "S0":0,
+      "S3":3,
+      "S4":4,
+      "S5":5,
+      "S2":2
+    }
+  },
+  {
+    "class":"chisel3.experimental.EnumAnnotations$EnumComponentAnnotation",
+    "target":"ModMul.ModMul.status",
+    "enumTypeName":"operator.ModMul$ModMulSel"
+  },
+  {
+    "class":"firrtl.transforms.BlackBoxTargetDirAnno",
+    "targetDir":"verilog"
+  }
 ]

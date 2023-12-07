@@ -1,11 +1,13 @@
 import operator._
-import chisel3.stage.ChiselGeneratorAnnotation
-import circt.stage.{ChiselStage, FirtoolOption}
+import paillier._
+import chisel3._
+import chisel3.stage._
 
-object Main extends App{
-    (new ChiselStage).execute(
-    Array("--target", "verilog"),
-      Seq(ChiselGeneratorAnnotation(() => new Powmod(1024, 1024, 2048)),
-    FirtoolOption("--disable-all-randomization"))
-    )
+object Main extends App
+{
+    emitVerilog(new ModMul(2048, 2048, 2048), Array("-td", "verilog"))
+    // emitVerilog(new Powmod(1024, 256, 2048), Array("-td", "verilog"))
+    emitVerilog(new PaillierEnc(1024, 256, 1024, 1024, 2048), Array("-td", "verilog"))
+    emitVerilog(new Powmod(1024, 1024, 2048), Array("-td", "verilog"))
+
 }
